@@ -2,3 +2,7 @@
 .vscode
 .git
 .DS_Store
+.gitignore
+.dockerignore
+Dockerfile
+README.md
