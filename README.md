@@ -2,16 +2,18 @@
 
 The primary goal of this microservice is to act as a secure relay or middleman for webhook events. By using Dreamcatcher, you can avoid exposing your original webhook URL directly—helpful for privacy, security, or when operating behind a firewall. Additionally, if the incoming webhook data does not match the requirements of your downstream service, Dreamcatcher allows you to intercept, inspect, and customize the payload before forwarding, ensuring compatibility and flexibility.
 
-Dreamcatcher is a FastAPI-based microservice that provides two main endpoints:
+Dreamcatcher is a FastAPI-based microservice that provides three main endpoints:
 
 - `/` (GET): Returns a motivational quote (from ZenQuotes API or a fallback).
 - `/github` (POST): Receives GitHub webhook events for published Docker multi-arch manifests and forwards them to a configured webhook URL.
+- `/relay` (POST): Generic webhook relay—accepts any payload and forwards it as-is to the configured webhook URL.
 > **Note:** You can extend Dreamcatcher by adding your own FastAPI endpoints to suit your specific needs. Simply define new routes in the codebase as required.
 
 ## Features
 
 - **Rate Limiting:** Protects endpoints from abuse using `slowapi`.
 - **Webhook Forwarding:** Forwards specific GitHub Container Registry publish events.
+- **Generic Relay:** Forwards any payload, regardless of shape or content type.
 - **Motivational Quotes:** Fetches a random quote from ZenQuotes.
 
 ---
@@ -75,6 +77,27 @@ Receives GitHub webhook payloads. Only forwards events where:
 curl -X POST http://localhost:8080/github \
   -H "Content-Type: application/json" \
   -d '{"action":"published","repository":{"full_name":"owner/repo"},"package":{"package_version":{"id":"123","container_metadata":{"manifest":{"media_type":"application/vnd.docker.distribution.manifest.list.v2+json"}}}}}'
+```
+
+---
+
+### POST `/relay`
+
+Generic webhook relay. Accepts any payload—any content type, any shape—and forwards the raw body as-is to `WEBHOOK_URL`, no filtering or inspection.
+
+**Example:**
+```sh
+curl -X POST http://localhost:8080/relay \
+  -H "Content-Type: application/json" \
+  -d '{"anything":"goes here"}'
+```
+
+**Response:**
+```json
+{
+  "status": "forwarded",
+  "status_code": 200
+}
 ```
 
 ---

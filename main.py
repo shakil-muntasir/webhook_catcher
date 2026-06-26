@@ -102,3 +102,37 @@ async def github_webhook(request: Request):
                 "trace": traceback.format_exc(),
             },
         )
+
+
+# --- POST "/relay" Generic Webhook Relay Route ---
+@app.post("/relay")
+@limiter.limit("10/minute")
+async def relay_webhook(request: Request):
+    try:
+        body = await request.body()
+        content_type = request.headers.get("content-type", "application/octet-stream")
+
+        logging.info(f"[Relay] Received {len(body)} bytes, content-type: {content_type}")
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                str(WEBHOOK_URL),
+                content=body,
+                headers={"Content-Type": content_type},
+            )
+            logging.info(
+                f"[Relay] Receiver responded with status: {resp.status_code}"
+            )
+            return {"status": "forwarded", "status_code": resp.status_code}
+
+    except Exception as e:
+        logging.error("[Error] Exception during relay webhook processing")
+        logging.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": str(e),
+                "trace": traceback.format_exc(),
+            },
+        )
